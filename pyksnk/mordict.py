@@ -340,9 +340,9 @@ class Cat(MorDict_PandasColumn):
     comments : typing.List[Comment], optional
         Comments anchored to the instance. 
         Defaults to an empty list rather than `None`.
-    attrvals : typing.FrozenSet[Cat_AttrVal], optional
+    attrvals : typing.Tuple[Cat_AttrVal], optional
         The set of the features and their values.
-        Defaults to an empty `FrozenSet`.
+        Defaults to an empty `Tuple`.
     """
 
     delimiter_beginning:    typing.ClassVar[str] = "{"
@@ -350,10 +350,10 @@ class Cat(MorDict_PandasColumn):
     pandas_col_name:        typing.ClassVar[str] = "Category"
     is_omittable:           typing.ClassVar[bool] = False
     
-    attrvals: typing.FrozenSet[Cat_AttrVal] = attr.ib( 
+    attrvals: typing.Tuple[Cat_AttrVal] = attr.ib( 
         cmp = True,
         kw_only = True,
-        factory = frozenset
+        factory = tuple
     )
 
     def dump_mordict(
@@ -1029,8 +1029,8 @@ class __Transformer(lark.Transformer):
             self, 
             children: typing.Iterator[typing.Any],
             meta: lark.tree.Meta
-    ) -> typing.FrozenSet[Cat_AttrVal]:
-        return frozenset(children)
+    ) -> typing.Tuple[Cat_AttrVal]:
+        return tuple(children)
     # === END ===
 
     def item_cat(
@@ -1038,7 +1038,7 @@ class __Transformer(lark.Transformer):
             children: typing.Iterator[typing.Any],
             meta: lark.tree.Meta
     ) -> Cat:
-        attrval_list: typing.FrozenSet[Cat_AttrVal] = children[0]
+        attrval_list: typing.Tuple[Cat_AttrVal] = children[0]
         comments: typing.List[Comment] = children[1:]
 
         return (
