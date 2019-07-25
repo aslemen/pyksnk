@@ -1,0 +1,57 @@
+// ======
+// morcomb.lark
+
+// The grammar of MOR dictionary files written in python-Lark
+// ======
+
+// ======
+// Lexers
+// ======
+
+PREAMBLE:       /[^%\r\n]+/
+
+PHON:           /\w[^\s{%]*/
+CAT_ATTR:       /[^{\[\]%\s]+/
+CAT_VALUE:      /[^{\[\]%\s]+/
+SEM:            /[^=%]+/
+GLOSS:          /[^"%]+/
+COMMENT:        /[^\r\n]+/
+
+// ------
+// Spaces
+// ------
+
+_WS_INLINE:        /[ \t\f]+/
+%ignore _WS_INLINE
+_EOL:       /(\r\n?|\r?\n)/
+
+// ======
+// Items
+// ======
+adj_comment:        "%" COMMENT?                _EOL+
+ 
+item_phon:          PHON                        _EOL* adj_comment*
+item_cat_attr:      CAT_ATTR                    // _EOL* adj_comment*
+item_cat_values:    CAT_VALUE*                  // _EOL* adj_comment*
+item_cat_attrval:   "[" item_cat_attr item_cat_values "]" _EOL* adj_comment*
+// TODO: check whether MOR allows interleaving EOLs
+
+item_cat_attrval_list: item_cat_attrval*        // _EOL* adj_comment*
+item_cat:           "{" item_cat_attrval_list "}"   _EOL* adj_comment*
+item_sem:           "=" SEM? "="                _EOL* adj_comment*
+item_gloss:         "\"" GLOSS? "\""            _EOL* adj_comment*
+
+item_preamble:      "@" PREAMBLE     (_EOL+ | adj_comment)  adj_comment*
+
+// ======
+// Lines
+// ======
+line:           item_phon item_cat item_sem? item_gloss? 
+
+// ======
+// Document
+// ======
+entries:        line*
+preambles:      item_preamble*
+comments_init:  adj_comment*
+start:          _EOL* comments_init preambles _EOL* entries _EOL*
