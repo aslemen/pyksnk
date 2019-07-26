@@ -24,8 +24,14 @@ def cmd_main():
     """
 \b
 Requirements:
-- Python: >= 3.6
-- Python Packages: lark-parser, ruamel.yaml
+- Python: >= 3.5
+- Python Packages:
+    ruamel.yaml
+    click
+    pandas
+    lark-parser
+    attrs
+    typing
     """
 # === END ===
 
@@ -58,11 +64,11 @@ You must specify the path to the input file, <input_file>, so that the script ca
 (Example: cat <path> | pyksnk morcomb to-yaml -, which is equivalent to mor2yaml <path>)
     """
     # Parsing
-    parsed: morcomb.Morcomb = (
+    parsed = (
         morcomb.parse(
             text = input_file.read()
         )
-    )
+    ) # type: morcomb.Morcomb
 
     # Dumping without any alternations
     sys.stdout.write(str(parsed))
@@ -89,14 +95,14 @@ You must specify the path to the input file, <input_file>, so that the script ca
     """
 
     # Initializations
-    YAML: yaml.YAML = morcomb.get_YAML_processor()
+    YAML = morcomb.get_YAML_processor() # type: yaml.YAML
 
     # Parsing
-    parsed: morcomb.Morcomb = (
+    parsed = (
         morcomb.parse(
             text = input_file.read()
         )
-    )
+    ) # type: morcomb.Morcomb
 
     # Dumping
     YAML.dump(parsed, sys.stdout)
@@ -115,7 +121,7 @@ You must specify the path to the input file, <input_file>, so that the script ca
 )
 def cmd_morcomb_yaml2mor(input_file):
     # Initializations
-    YAML: yaml.YAML = morcomb.get_YAML_processor()
+    YAML = morcomb.get_YAML_processor() # type: yaml.YAML
 
     # Parsing
     parsed = YAML.load(input_file)
@@ -169,7 +175,7 @@ def cmd_dict_check(dic_files):
     #options_metavar = "<dictionary_files>"
 )
 def cmd_dict_check_dup(dic_files):
-    dict_all: pd.DataFrame = None
+    # dict_all: pd.DataFrame = None
 
     if dic_files:
         dict_all = pd.concat(
@@ -188,12 +194,12 @@ def cmd_dict_check_dup(dic_files):
         ).to_dataframe()
     # === END IF ===
 
-    dup: pd.Series = dict_all.duplicated(
+    dup = dict_all.duplicated(
         subset = [
             mordict.Phon.pandas_col_name
         ],
         keep = False
-    )
+    ) # type: pd.Series
     contents_dup = dict_all[dup]
 
     mordict.dump_mordict_pandas(contents_dup, sys.stdout)
@@ -210,7 +216,7 @@ def cmd_dict_check_dup(dic_files):
 )
 def cmd_dict_lint(path_dic_files):
     if path_dic_files:
-        current_dic: mordict.Dictionary = None
+        # current_dic: mordict.Dictionary = None
 
         for pf in path_dic_files:
             try:
@@ -234,14 +240,14 @@ def cmd_dict_lint(path_dic_files):
             finally: pass
         # === END FOR pf ===
     else:
-        dict_stdin: mordict.Dictionary = (
+        dict_stdin = (
             mordict.parse(
                 "<STDIN>",
                 sys.stdin.read()
             )
-        )
+        ) # type: mordict.Dictionary
 
-        buf: io.StringIO = io.StringIO()
+        buf = io.StringIO() # type: io.StringIO 
         dict_stdin.dump_mordict(buf)
         buf.seek(0) # go back to the beginning
         sys.stdout.writelines(iter(buf)) # write linewise

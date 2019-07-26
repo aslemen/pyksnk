@@ -26,7 +26,7 @@ def _gen_rand_neg() -> int:
 # Data Types
 # ======
 @attr.s(
-    auto_attribs = True
+    #auto_attribs = True
 )
 class MorDict_Base(metaclass = abc.ABCMeta):
     """
@@ -48,22 +48,24 @@ class MorDict_Base(metaclass = abc.ABCMeta):
     its morcomb serialization.
     """
     
-    meta: typing.Optional[lark.tree.Meta] = attr.ib(
+    meta = attr.ib(
         cmp = False,
         kw_only = True,
-        factory = lambda: None
+        factory = lambda: None,
+        type = typing.Optional[lark.tree.Meta]
     )
 
-    comments: typing.List["Comment"] = attr.ib(
+    comments = attr.ib(
         cmp = False,
         kw_only = True,
-        factory = list
+        factory = list,
+        type = typing.List["Comment"]
     )
 
-    delimiter_beginning: typing.ClassVar[str]
-    """Beginning delimiter in MOR files."""
-    delimiter_end: typing.ClassVar[str]
-    """End delimiter in MOR files."""
+    #delimiter_beginning: typing.ClassVar[str]
+    #"""Beginning delimiter in MOR files."""
+    #delimiter_end: typing.ClassVar[str]
+    #"""End delimiter in MOR files."""
     
     @abc.abstractmethod
     def dump_mordict(
@@ -120,7 +122,7 @@ class MorDict_Base(metaclass = abc.ABCMeta):
     cmp = True,     # make this comparable
     frozen = True,  # make this immutable -> hashable
     slots = True,
-    auto_attribs = True
+    #auto_attribs = True
 )
 class MorDict_SingleFixedValue(MorDict_Base):
     """
@@ -139,13 +141,14 @@ class MorDict_SingleFixedValue(MorDict_Base):
         The value that the instance contain.
     """
 
-    value: str = attr.ib(
+    value = attr.ib(
         cmp = True,
-        kw_only = True
+        kw_only = True,
+        type = str
     )
 
-    is_omittable: typing.ClassVar[bool]
-    """Indicates whetehr instances can be omitted in MOR dictionary files."""
+    #is_omittable: typing.ClassVar[bool]
+    #"""Indicates whetehr instances can be omitted in MOR dictionary files."""
 
     def dump_mordict(
         self,
@@ -191,8 +194,8 @@ class MorDict_PandasColumn(MorDict_Base):
     (which requires being frozen).
     """
 
-    pandas_col_name: typing.ClassVar[str]
-    """Column name in Pandas."""
+    #pandas_col_name: typing.ClassVar[str]
+    #"""Column name in Pandas."""
 # === END abstract CLASS ===
 
 class Comment(MorDict_SingleFixedValue):
@@ -214,9 +217,9 @@ class Comment(MorDict_SingleFixedValue):
         The comment.
     """
 
-    delimiter_beginning: typing.ClassVar[str] = "% "
-    delimiter_end: typing.ClassVar[str] = "\n"
-    is_omittable: typing.ClassVar[bool] = True
+    delimiter_beginning = "% " # type: typing.ClassVar[str]
+    delimiter_end = "\n" # type: typing.ClassVar[str]
+    is_omittable = True # type: typing.ClassVar[bool]
 # === END CLASS ===
 
 class Phon(MorDict_SingleFixedValue, MorDict_PandasColumn):
@@ -237,12 +240,10 @@ class Phon(MorDict_SingleFixedValue, MorDict_PandasColumn):
     value : str
         The surface form.
     """
-    delimiter_beginning: typing.ClassVar[str] = ""
-    delimiter_end: typing.ClassVar[str] = ""
-    pandas_col_name: typing.ClassVar[str] = "Phon"
-    is_omittable: typing.ClassVar[bool] = False
-
-    # def __hash__(self): return hash(self.value)
+    delimiter_beginning = "" # type: typing.ClassVar[str]
+    delimiter_end = "" # type: typing.ClassVar[str]
+    pandas_col_name = "Phon" # type: typing.ClassVar[str]
+    is_omittable = False # type: typing.ClassVar[bool]
 # === END CLASS ===
 
 @attr.s(
@@ -250,7 +251,7 @@ class Phon(MorDict_SingleFixedValue, MorDict_PandasColumn):
     frozen = True,
     cache_hash = True,
     slots = True,
-    auto_attribs = True
+    #auto_attribs = True
 )
 class Cat_AttrVal(MorDict_Base):
     r"""
@@ -273,16 +274,18 @@ class Cat_AttrVal(MorDict_Base):
     value : typing.Union[str, typing.List[str]]
         The value, either a string or a list thereof.
     """
-    delimiter_beginning: typing.ClassVar[str] = "["
-    delimiter_end:       typing.ClassVar[str] = "]"
+    delimiter_beginning = "[" # type: typing.ClassVar[str]
+    delimiter_end = "]" # type:       typing.ClassVar[str] 
 
-    key: str = attr.ib(
+    key = attr.ib(
         cmp = True,
-        kw_only = True
+        kw_only = True,
+        type = str
     )
-    value: typing.Union[str, typing.List[str]] = attr.ib(
+    value = attr.ib(
         cmp = True,
-        kw_only = True
+        kw_only = True,
+        type = typing.Union[str, typing.List[str]]
     )
 
     def dump_mordict(
@@ -313,7 +316,7 @@ class Cat_AttrVal(MorDict_Base):
     frozen = True,
     cache_hash = True,
     slots = True,
-    auto_attribs = True
+    #auto_attribs = True
 )
 class Cat(MorDict_PandasColumn):
     r"""
@@ -344,15 +347,16 @@ class Cat(MorDict_PandasColumn):
         Defaults to an empty `Tuple`.
     """
 
-    delimiter_beginning:    typing.ClassVar[str] = "{"
-    delimiter_end:          typing.ClassVar[str] = "}"
-    pandas_col_name:        typing.ClassVar[str] = "Category"
-    is_omittable:           typing.ClassVar[bool] = False
+    delimiter_beginning = "{" # type:    typing.ClassVar[str]
+    delimiter_end = "}" # type:          typing.ClassVar[str] 
+    pandas_col_name = "Category" # type:        typing.ClassVar[str]
+    is_omittable = False # type:           typing.ClassVar[bool]
     
-    attrvals: typing.Tuple[Cat_AttrVal] = attr.ib( 
+    attrvals = attr.ib( 
         cmp = True,
         kw_only = True,
-        factory = tuple
+        factory = tuple,
+        type = typing.Tuple[Cat_AttrVal]
     )
 
     def dump_mordict(
@@ -404,11 +408,10 @@ class Sem(MorDict_SingleFixedValue, MorDict_PandasColumn):
     value : str
         The english translation.
     """
-    delimiter_beginning:    typing.ClassVar[str]  = "="
-    delimiter_end:          typing.ClassVar[str]  = "="
-    is_omittable:           typing.ClassVar[bool] = True
-    pandas_col_name:        typing.ClassVar[str]  = "Overall Semantics"
-    # def __hash__(self): return hash(self.value)
+    delimiter_beginning  = "=" # type:    typing.ClassVar[str]
+    delimiter_end  = "=" # type:          typing.ClassVar[str]
+    is_omittable = True # type:           typing.ClassVar[bool]
+    pandas_col_name  = "Overall Semantics" # type:        typing.ClassVar[str]
 # === END CLASS ===
 
 class Gloss(MorDict_SingleFixedValue, MorDict_PandasColumn):
@@ -429,17 +432,16 @@ class Gloss(MorDict_SingleFixedValue, MorDict_PandasColumn):
     value : str
         The lemmatization.
     """
-    delimiter_beginning:    typing.ClassVar[str]  = '"'
-    delimiter_end:          typing.ClassVar[str]  = '"'
-    is_omittable:           typing.ClassVar[bool] = True
-    pandas_col_name:        typing.ClassVar[str]  = "Morphological Analysis"
-    # def __hash__(self): return hash(self.value)
+    delimiter_beginning = '"' # type:    typing.ClassVar[str]  
+    delimiter_end  = '"' # type:          typing.ClassVar[str]
+    is_omittable = True # type:           typing.ClassVar[bool]
+    pandas_col_name  = "Morphological Analysis" # type:        typing.ClassVar[str]
 # === END CLASS ===
 
 @attr.s(
     cmp = True,
     frozen = True,
-    auto_attribs = True
+    #auto_attribs = True
 )
 class Lex_Entry(MorDict_Base):
     r"""
@@ -474,40 +476,45 @@ class Lex_Entry(MorDict_Base):
     Switching the `enabled` attribute to `False` enables you
     to keep those comments by masking the entry instaed of deleting it.
     """
-    phon: Phon = attr.ib(
+    phon = attr.ib(
         cmp = True,
-        kw_only = True
+        kw_only = True,
+        type = Phon
     )
-    cat: Cat = attr.ib(
+    cat = attr.ib(
         cmp = True,
-        kw_only = True
+        kw_only = True,
+        type = Cat
     )
-    sem: Sem = attr.ib(
+    sem = attr.ib(
         cmp = True,
         kw_only = True,
         factory = lambda: Sem(
             meta = None, 
             comments = [], 
             value = ""
-        )
+        ),
+        type = Sem
     )
-    gloss: Gloss = attr.ib(
+    gloss = attr.ib(
         cmp = True,
         kw_only = True,
         factory = lambda: Gloss(
             meta = None, 
             comments = [], 
             value = ""
-        )
+        ),
+        type = Gloss
     )
-    enabled: bool = attr.ib(
+    enabled = attr.ib(
         cmp = False,
         kw_only = True,
-        factory = lambda: True
+        factory = lambda: True,
+        type = bool
     )
 
-    delimiter_beginning: typing.ClassVar[str] = ""
-    delimiter_end:       typing.ClassVar[str] = ""
+    delimiter_beginning = "" # type: typing.ClassVar[str]
+    delimiter_end = "" # type:       typing.ClassVar[str]
 
     def dump_mordict(
         self,
@@ -530,7 +537,7 @@ class Lex_Entry(MorDict_Base):
             self.gloss.dump_mordict(buffer, with_comments)
         else:
             # discard contents and just dump comments
-            disabled_entry: io.StringIO = io.StringIO()
+            disabled_entry = io.StringIO() # type: io.StringIO 
 
             self.phon.dump_mordict(disabled_entry, with_comments)
             buffer.write("\t")
@@ -546,14 +553,14 @@ class Lex_Entry(MorDict_Base):
             # === END IF ===
             self.gloss.dump_mordict(disabled_entry, with_comments)
 
-            disabled_entry_res: str = disabled_entry.getvalue(
+            disabled_entry_res = disabled_entry.getvalue(
             ).replace(
                 "\r\n", " "
             ).replace(
                 "\n", " "
             ).replace(
                 "\r", " "
-            )
+            ) # type: str
 
             buffer.writelines(
                 (
@@ -574,7 +581,7 @@ class Lex_Entry(MorDict_Base):
 
         if buffer.seekable():
             buffer.seek(buffer.tell() - 1)
-            last_char: str = buffer.read()
+            last_char = buffer.read() # type: str
             if last_char not in "\n\r":
                 buffer.write("\n")
             # === END IF ===
@@ -636,7 +643,7 @@ class Lex_Entry(MorDict_Base):
         index : typing.Tuple[str, int, int]
             The complex index tuple explained above.
         """
-        meta: typing.Optional[lark.tree.Meta] = self.meta
+        meta = self.meta # type: typing.Optional[lark.tree.Meta]
         if meta and not meta.empty:
             return (name, meta.line, meta.column)
         else:
@@ -644,32 +651,32 @@ class Lex_Entry(MorDict_Base):
     # === END ===
 # === END CLASS ===
 
-pandas_index_names: typing.Tuple[str] = (
+pandas_index_names = (
     "dict_name",
     "line",
     "column"
-)
+) # type: typing.Tuple[str]
 """
 Fixed list of index names of a MOR dictionary in a Pandas DataFrame.
 """
 
-pandas_col_names: typing.Tuple[str] = (
+pandas_col_names = (
     Phon.pandas_col_name,
     Cat.pandas_col_name,
     Sem.pandas_col_name,
     Gloss.pandas_col_name,
     "enabled"
-)
+) # type: typing.Tuple[str]
 """
 Fixed list of column names of a MOR dictionary in the Pandas DataFrame form.
 """
 
-pandas_col_names_overt: typing.Tuple[str] = (
+pandas_col_names_overt = (
     Phon.pandas_col_name,
     Cat.pandas_col_name,
     Sem.pandas_col_name,
     Gloss.pandas_col_name,
-)
+) # type: typing.Tuple[str]
 """
 Fixed list of column names of a MOR dictionary which originally appears in a MOR file.
 """
@@ -718,13 +725,13 @@ class Preamble(MorDict_SingleFixedValue):
     value : str
         The content.
     """
-    delimiter_beginning: typing.ClassVar[str] = "@"
-    delimiter_end: typing.ClassVar[str] = "\n"
-    is_omittable: typing.ClassVar[bool] = True
+    delimiter_beginning = "@" # type: typing.ClassVar[str]
+    delimiter_end = "\n" # type: typing.ClassVar[str]
+    is_omittable = True # type: typing.ClassVar[bool]
 # === END CLASS ===
 
 @attr.s(
-    auto_attribs = True
+    #auto_attribs = True
 )
 class Dictionary(MorDict_Base):
     r"""
@@ -750,24 +757,27 @@ class Dictionary(MorDict_Base):
         List of word entries.
         Defaults to an empty list.
     """
-    name: str = attr.ib(
+    name = attr.ib(
         cmp = True,
         kw_only = True,
         factory = lambda: "<UNTITLED>{0:0=7X}".format(
             random.randint(1, 16^7)
-        ) 
+        ),
+        type = str 
     )
 
-    preambles: typing.List[Preamble] = attr.ib(
+    preambles = attr.ib(
         cmp = False,
         kw_only = True,
-        factory = list
+        factory = list,
+        type = typing.List[Preamble]
     )
 
-    contents: typing.List[Lex_Entry] = attr.ib(
+    contents = attr.ib(
         cmp = True,
         kw_only = True,
-        factory = list
+        factory = list,
+        type = typing.List[Lex_Entry]
     )
     # === EMD ===
 
@@ -798,18 +808,18 @@ class Dictionary(MorDict_Base):
         df : pd.DataFrame
             The Pandas DataFrame.
         """
-        data: typing.Iterator[typing.Tuple[Phon, Cat, Sem, Gloss, bool]] = (
+        data = (
             map(
                 lambda lex: tuple(lex.to_tuple()),
                 self.contents
             )
-        )
-        index: typing.Iterator[typing.Tuple[str, int, int]] = (
+        ) # type: typing.Iterator[typing.Tuple[Phon, Cat, Sem, Gloss, bool]]
+        index = (
             map(
                 lambda lex: tuple(lex.get_dataframe_index(self.name)),
                 self.contents
             )
-        )
+        ) # type: typing.Iterator[typing.Tuple[str, int, int]]
 
         return pd.DataFrame(
             data,
@@ -1005,8 +1015,8 @@ class __Transformer(lark.Transformer):
         vals = children[1]
         comments = children[2:]
 
-        val_res: typing.Union[str, typing.List[str]]
-        val_len: int = len(vals)
+        #val_res: typing.Union[str, typing.List[str]]
+        val_len = len(vals) # type: int
 
         if val_len == 0:
             val_res = ""
@@ -1037,8 +1047,8 @@ class __Transformer(lark.Transformer):
             children: typing.Iterator[typing.Any],
             meta: lark.tree.Meta
     ) -> Cat:
-        attrval_list: typing.Tuple[Cat_AttrVal] = children[0]
-        comments: typing.List[Comment] = children[1:]
+        attrval_list = children[0] # type: typing.Tuple[Cat_AttrVal] 
+        comments = children[1:] # type: typing.List[Comment]
 
         return (
             "cat", 
@@ -1055,11 +1065,11 @@ class __Transformer(lark.Transformer):
             children: typing.Iterator[typing.Any],
             meta: lark.tree.Meta
         ) -> Sem:
-        res_str: str = ""
-        comments: typing.List[Comment] = []
+        res_str = "" # type: str
+        comments = [] # type: typing.List[Comment]
 
         if len(children) > 0:
-            init_arg: lark.Token  = children[0]
+            init_arg = children[0] # type: lark.Token  
 
             if isinstance(init_arg, lark.Token) and init_arg.type == "SEM":
                 res_str = str(init_arg)
@@ -1082,11 +1092,11 @@ class __Transformer(lark.Transformer):
             children: typing.Iterator[typing.Any],
             meta: lark.tree.Meta
         ) -> Gloss:
-        res_str: str = ""
-        comments: typing.List[Comment] = []
+        res_str = "" # type: str
+        comments = [] # type: typing.List[Comment]
 
         if len(children) > 0:
-            init_arg: lark.Token = children[0]
+            init_arg = children[0] # type: lark.Token
 
             if init_arg.type == "GLOSS":
                 res_str = str(init_arg)
@@ -1118,12 +1128,12 @@ class __Transformer(lark.Transformer):
     # === END ===
 # === END CLASS ===
 
-__transformer_instance: __Transformer = __Transformer()
+__transformer_instance = __Transformer() # type: __Transformer
 
 # ------
 # Parser
 # ------
-_grammar: str = (
+_grammar = (
     # ======
     # Lexers
     # ======
@@ -1187,13 +1197,13 @@ preambles:      item_preamble*
 comments_init:  adj_comment*
 start:          _EOL* comments_init preambles _EOL* entries _EOL*
     """
-)
+) # type: str
 
-parser: lark.Lark = lark.Lark(
+parser = lark.Lark(
     grammar = _grammar,
     parser = "lalr",
     propagate_positions = True,
-)
+) # type: lark.Lark 
 """
 A Lark parser for MOR dictionary files.
 """
@@ -1242,7 +1252,7 @@ def parse(name: str, text: str) -> Dictionary:
     --------
     parse_raw
     """
-    res: Dictionary = __transformer_instance.transform(parse_raw(text))
+    res = __transformer_instance.transform(parse_raw(text)) # type: Dictionary
     res.name = name
     return res
 # === END ===

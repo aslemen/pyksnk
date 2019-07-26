@@ -26,14 +26,15 @@ class WordAnalysisCandidates:
         return "^".join(map(str, self.alts))
     # === END ===
 
-    yaml_tag: str = "!WAC"
+    yaml_tag = "!WAC" # type: typing.ClassVar[str]
 
     @classmethod
     def to_yaml(cls, 
         representer: yaml.BaseRepresenter, 
         node: "WordAnalysisCandidates"
         ):
-        flow_style: bool = not node.is_ambiguous() # Candidates will be dumped in a block if you have more than one.
+        flow_style = not node.is_ambiguous() # type: bool 
+        # Candidates will be dumped in a block if you have more than one.
 
         return representer.represent_sequence(
             cls.yaml_tag,
@@ -104,10 +105,10 @@ class Word:
             typing.List[str]
         ]
     ]:
-        line_mor: typing.List[WordAnalysisCandidates] = []
-        line_comb: typing.List[str] = []
-        line_penn: typing.List[str] = []
-        line_ort: typing.List[str] = []
+        line_mor = [] # type: typing.List[WordAnalysisCandidates]
+        line_comb = [] # type: typing.List[str]
+        line_penn = [] # type: typing.List[str]
+        line_ort = [] # type: typing.List[str]
 
         for w in words:
             line_mor.append(w.mor_candidates)
@@ -125,7 +126,7 @@ class Word:
         )
     # === END ===
 
-    yaml_tag: str = "!Word"
+    yaml_tag = "!Word" # type: typing.ClassVar[str]
 
     @classmethod
     def to_yaml(cls, 
@@ -179,18 +180,18 @@ class Sentence:
 
     def __str__(self) -> str:
         m, c, p, o = Word.list_columns_from_words(self.words)
-        spacer: typing.Mapping[list, str] = (
+        spacer = (
             lambda li: " ".join(map(str, li))
-        )
-        filter_spacer: typing.Mapping[list, str] = (
+        ) # type: typing.Mapping[list, str]
+        filter_spacer = (
             lambda li: spacer(filter(None, li))
-        )
-        tabber: typing.Mapping[list, str] = (
+        ) # type: typing.Mapping[list, str]
+        tabber = (
             lambda li: "\n\t".join(map(str, li))
-        )
-        filter_tabber: typing.Mapping[list, str] = (
+        ) # type: typing.Mapping[list, str]
+        filter_tabber = (
             lambda li: tabber(filter(None, li))
-        )
+        ) # type: typing.Mapping[list, str]
 
         return """\
 *CHI:\t{chi}
@@ -209,7 +210,7 @@ class Sentence:
 )
     # === END ===
 
-    yaml_tag: str = "!Sentence"
+    yaml_tag = "!Sentence" # type: typing.ClassVar[str]
 
     @classmethod
     def to_yaml(cls, 
@@ -276,7 +277,7 @@ class Morcomb:
         )
     # === END ===
 
-    yaml_tag: str = "!Morcomb"
+    yaml_tag = "!Morcomb" # type: typing.ClassVar[str]
 
     @classmethod
     def to_yaml(cls, 
@@ -322,7 +323,7 @@ class Morcomb:
 # Dumping to YAML
 # ======
 def get_YAML_processor() -> yaml.YAML:
-    YAML: yaml.YAML = yaml.YAML()
+    YAML = yaml.YAML() # type: yaml.YAML 
     YAML.register_class(WordAnalysisCandidates)
     YAML.register_class(Word)
     YAML.register_class(Sentence)
@@ -339,12 +340,12 @@ def get_YAML_processor() -> yaml.YAML:
 # Auxiliaries
 # ------
 class __Indenter(lark.indenter.Indenter):
-    NL_type:            str                 = "_NEWLINES"
-    OPEN_PAREN_types:   typing.List[str]    = []
-    CLOSE_PAREN_types:  typing.List[str]    = []
-    INDENT_type:        str                 = "_INDENT"
-    DEDENT_type:        str                 = "_DEDENT"
-    tab_len:            int                 = 4
+    NL_type = "_NEWLINES" # type: str
+    OPEN_PAREN_types = [] # type: typing.List[str]    
+    CLOSE_PAREN_types = [] # type:  typing.List[str]    
+    INDENT_type = "_INDENT" # type:        str                
+    DEDENT_type = "_DEDENT" # type: str
+    tab_len = 4 # type: int
 # === END CLASS ===
 
 # TODO: この種の変換は必ずしも必要ない（lintの場合は特にそう）ので、変換を切り出しておくとよい。
@@ -368,12 +369,12 @@ class __Transformer(lark.Transformer):
     def sentence(self, args: typing.Iterator[lark.Tree]):
         res = {subtree.data:subtree.children for subtree in args}
 
-        res_words: dict = Word.iter_from_columns(
+        res_words = Word.iter_from_columns(
             res["line_mor"],
             map(lambda x: x.value, res["line_comb"]),
             map(lambda x: x.value, res["line_penn"]),
             map(lambda x: x.value, res["line_ort"]),
-        )
+        ) # type: typing.Dict[typing.Any]
         # TODO: この手の変換はもう少しlocalにやりたい
 
         def squash_tokens(li: typing.List[lark.Token]) -> str:
@@ -396,7 +397,7 @@ class __Transformer(lark.Transformer):
 # ------
 # Parser
 # ------
-_grammar: str = (
+_grammar = (
     # ======
     # Lexers
     # ======
@@ -461,14 +462,14 @@ postambles: item_amble*
 sentence_list: sentence*
 start: _NEWLINES* preambles sentence_list postambles
     """
-)
+) # type: str
 
-parser: lark.Lark = lark.Lark(
+parser = lark.Lark(
     grammar = _grammar,
     parser = "lalr",
     postlex = __Indenter(),
     transformer = __Transformer()
-)
+) # type: lark.Lark
 
 def parse(text: str) -> Morcomb:
     return parser.parse(text)
