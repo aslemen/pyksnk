@@ -6,7 +6,6 @@ import itertools
 import collections
 import sys
 import io
-import pathlib
 import random
 
 import lark
@@ -1124,22 +1123,80 @@ __transformer_instance: __Transformer = __Transformer()
 # ------
 # Parser
 # ------
-parser: lark.Lark = None
+_grammar: str = (
+    # ======
+    # Lexers
+    # ======
+
+    # ------
+    # Literals
+    # ------
+    r"""
+PREAMBLE:       /[^%\r\n]+/
+
+PHON:           /\w[^\s{%]*/
+CAT_ATTR:       /[^{\[\]%\s]+/
+CAT_VALUE:      /[^{\[\]%\s]+/
+SEM:            /[^=%]+/
+GLOSS:          /[^"%]+/
+COMMENT:        /[^\r\n]+/
+    """
+    
+    # ------
+    # Spaces
+    # ------
+    r"""
+_WS_INLINE:        /[ \t\f]+/
+%ignore _WS_INLINE
+_EOL:       /(\r\n?|\r?\n)/
+    """
+
+    # ======
+    # Items
+    # ======
+    r"""
+adj_comment:        "%" COMMENT?                _EOL+
+ 
+item_phon:          PHON                        _EOL* adj_comment*
+item_cat_attr:      CAT_ATTR                    // _EOL* adj_comment*
+item_cat_values:    CAT_VALUE*                  // _EOL* adj_comment*
+item_cat_attrval:   "[" item_cat_attr item_cat_values "]" _EOL* adj_comment*
+// TODO: check whether MOR allows interleaving EOLs
+
+item_cat_attrval_list: item_cat_attrval*        // _EOL* adj_comment*
+item_cat:           "{" item_cat_attrval_list "}"   _EOL* adj_comment*
+item_sem:           "=" SEM? "="                _EOL* adj_comment*
+item_gloss:         "\"" GLOSS? "\""            _EOL* adj_comment*
+
+item_preamble:      "@" PREAMBLE     (_EOL+ | adj_comment)  adj_comment*
+    """
+
+    # ======
+    # Lines
+    # ======
+    r"""
+line:           item_phon item_cat item_sem? item_gloss? 
+    """
+
+    # ======
+    # Document
+    # ======
+    r"""
+entries:        line*
+preambles:      item_preamble*
+comments_init:  adj_comment*
+start:          _EOL* comments_init preambles _EOL* entries _EOL*
+    """
+)
+
+parser: lark.Lark = lark.Lark(
+    grammar = _grammar,
+    parser = "lalr",
+    propagate_positions = True,
+)
 """
 A Lark parser for MOR dictionary files.
 """
-
-# Initialization: Loading the parser
-with open(
-    pathlib.Path(__file__).parent / "mordict.lark",
-    mode = "r"
-    ) as grammar:
-    parser = lark.Lark(
-        grammar = grammar,
-        parser = "lalr",
-        propagate_positions = True,
-    )
-# === END WITH grammar ===
 
 # ------
 # Executor

@@ -5,4 +5,4 @@ Author: Nori Hayashi <ac@hayashi-lin.net>
 """
 
 name = "pyksnk"
-__version__ = 20190724
+__version__ = 20190726

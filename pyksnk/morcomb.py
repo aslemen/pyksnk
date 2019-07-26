@@ -3,7 +3,6 @@ import typing
 import functools
 import itertools
 
-import pathlib
 import lark
 import lark.indenter
 
@@ -397,18 +396,79 @@ class __Transformer(lark.Transformer):
 # ------
 # Parser
 # ------
-parser: lark.Lark = None
-with open(
-        pathlib.Path(__file__).parent / "morcomb.lark",
-        mode = "r"
-    ) as grammar:
-    parser = lark.Lark(
-        grammar = grammar,
-        parser = "lalr",
-        postlex = __Indenter(),
-        transformer = __Transformer()
-    )
-# === END WITH grammar ===
+_grammar: str = (
+    # ======
+    # Lexers
+    # ======
+
+    # ------
+    # Spaces
+    # ------
+    r"""
+%import common.WS_INLINE -> _SPACES
+_EOL:      /(\r\n?|\r?\n)/
+_NEWLINES: (_EOL _SPACES*)+
+%declare _INDENT _DEDENT
+    """
+
+    # ------
+    # Literals
+    # ------
+    r"""
+STR:      /\S+/
+TILL_EOL: /[^\r\n]+/
+
+WORD_CAND: /[^\s^]+/
+_SEP_WORD_CANDIDATE: "^"
+    """
+
+    # ======
+    # Items
+    # ======
+    r"""
+?item_str: STR _SPACES?
+?item_amble: "@" TILL_EOL _NEWLINES
+?item_word_candidate: WORD_CAND 
+
+list_mor: item_word_candidate (_SEP_WORD_CANDIDATE item_word_candidate)*
+    """
+
+    # ======
+    # Lines
+    # ======
+    r"""
+line_chi:   "*CHI:" _SPACES? TILL_EOL _NEWLINES
+line_mor:   "%mor:" _SPACES? list_mor (_SPACES list_mor)* _SPACES? _NEWLINES (_INDENT (list_mor* _NEWLINES)+ _DEDENT)?
+line_comb:  "%comb:" _SPACES? item_str* _NEWLINES (_INDENT (item_str* _NEWLINES)+ _DEDENT)?
+line_penn:  "%penn:" _SPACES?  item_str* _NEWLINES (_INDENT (item_str* _NEWLINES)+ _DEDENT)?
+line_ort:   "%ort:" _SPACES? item_str* _NEWLINES (_INDENT (item_str* _NEWLINES)+ _DEDENT)?
+line_num:   "@G:" _SPACES? TILL_EOL _NEWLINES
+    """
+
+    # ======
+    # Blocks
+    # ======
+    r"""
+preambles: item_amble*
+sentence: line_chi line_mor line_comb line_penn line_ort line_num
+postambles: item_amble*
+    """
+
+    # ======
+    # Document
+    # ======
+    r"""
+sentence_list: sentence*
+start: _NEWLINES* preambles sentence_list postambles
+    """
+)
+
+parser: lark.Lark = lark.Lark(
+    grammar = _grammar,
+    parser = "lalr",
+    postlex = __Indenter(),
+    transformer = __Transformer()
+)
 
 def parse(text: str) -> Morcomb:
     return parser.parse(text)
