@@ -4,9 +4,14 @@ import attr
 import functools
 import itertools
 
+import io
 import re
 import random
 import lark
+
+_plantuml_rename_table = str.maketrans({
+    "-": "_"
+})
 
 @attr.s(cmp = False)
 class CRULE_Clause:
@@ -45,6 +50,23 @@ class CRULE:
         type = typing.List[CRULE_Clause]
     )
 
+    def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
+        stream.writelines([
+            "state ", self.name.translate(_plantuml_rename_table), " {\n",
+            "start\n"
+        ]) 
+        
+        for clause in self.clauses:
+            stream.writelines([
+                ":", "∧".join(map(str, clause.conditions)), ";\n"
+            ])
+
+        # === END FOR clause ===
+
+        stream.writelines([
+            "stop\n",
+            "}\n"
+        ])
 # === END CLASS ===
 
 Preamble = str
@@ -68,6 +90,18 @@ class CRULE_Set:
         type = typing.Dict[str, CRULE]
     )
 
+    def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
+        stream.writelines([
+            "@startuml\n",
+            "title ", self.name.translate(_plantuml_rename_table), "\n",
+            "a --> b\n"
+        ])
+
+        for rule in self.rules.values():
+            rule.dump_plantuml(stream)
+        # === END FOR rule ===
+
+        stream.write("@enduml\n")
 # === END CLASS ===
 
 # ======
@@ -276,3 +310,9 @@ A Lark parser for MOR c-rules.
 def parse(text: str) -> CRULE_Set:
     return parser.parse(text)
 # === END ===
+
+if __name__ == "__main__":
+    import sys
+    cr = parse(sys.stdin.read())
+
+    cr.dump_plantuml(sys.stdout)
