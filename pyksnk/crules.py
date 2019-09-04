@@ -26,6 +26,46 @@ class CRULE_Clause:
     rulepackages = attr.ib(
         type = typing.List[str]
     )
+
+    def dump_plantuml_part(self, stream: typing.TextIO, first: bool = False) -> typing.NoReturn:
+        res = [
+            "    ",
+            ("if " if first else "elseif "),
+            (
+"""\
+({}) then (yes)
+""".format(
+    "∧".join(self.conditions)
+)
+            )
+
+        ]
+
+        if self.rulepackages:
+            res.append("""\
+        fork
+""")
+            res.append("""\
+        fork again
+""".join(
+    map(
+        lambda r: """\
+             :{};
+             detach
+""".format(r),
+        self.rulepackages
+    )
+)
+            )
+            res.append(
+"""\
+        end fork
+"""
+            )
+        # === END IF ===
+        stream.writelines(res)
+    # === END ===
+        
 # === END CLASS ===
 
 @attr.s(cmp = False)
@@ -50,23 +90,46 @@ class CRULE:
         type = typing.List[CRULE_Clause]
     )
 
+    def get_name_plantuml(self) -> str:
+        return self.name.translate(_plantuml_rename_table)
+    # === END ===
+
     def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
-        stream.writelines([
-            "state ", self.name.translate(_plantuml_rename_table), " {\n",
-            "start\n"
-        ]) 
+        stream.writelines(
+            [
+                "partition ",
+                self.get_name_plantuml(),
+                " {\n",
+            ]
+        ) 
+
+        if self.clauses:
+            self.clauses[0].dump_plantuml_part(stream, True)
+
+            for clause in self.clauses[1:]:
+                clause.dump_plantuml_part(stream, False)
+            # === END FOR clause ===
+
+            stream.write("""\
+    endif
+""")
+        else:
+            pass
+        # === END IF ===
+
+        if self.ctype == "END":
+            stream.write(
+                """    :yield>
+"""
+        )
+        else:
+            pass
+        # === END IF ===
         
-        for clause in self.clauses:
-            stream.writelines([
-                ":", "∧".join(map(str, clause.conditions)), ";\n"
-            ])
-
-        # === END FOR clause ===
-
-        stream.writelines([
-            "stop\n",
-            "}\n"
-        ])
+        stream.write("""}
+end
+""")
+    # === END ===
 # === END CLASS ===
 
 Preamble = str
@@ -91,17 +154,40 @@ class CRULE_Set:
     )
 
     def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
-        stream.writelines([
-            "@startuml\n",
-            "title ", self.name.translate(_plantuml_rename_table), "\n",
-            "a --> b\n"
-        ])
+        stream.write(
+            r"""@startuml
+title {title}
+start
+fork
+{start_rules}
+end fork
+end
+""".format(
+                title = self.name.translate(_plantuml_rename_table),
+                start_rules = "\nfork again\n".join(
+                    map(
+                        lambda r: r"""    :{};
+    detach""".format(
+                            r.get_name_plantuml()
+                        ),
+                        filter(
+                            lambda r: r.ctype == "START",
+                            self.rules.values()
+                        )
+                    )
+                )
+            )
+        )
 
         for rule in self.rules.values():
             rule.dump_plantuml(stream)
         # === END FOR rule ===
 
-        stream.write("@enduml\n")
+        stream.write(
+            r"""@enduml
+"""
+        )
+
 # === END CLASS ===
 
 # ======
