@@ -11,6 +11,7 @@ import click
 
 from . import mordict
 from . import morcomb
+from . import crule
 
 # ======
 # Commandline commands
@@ -252,4 +253,40 @@ def cmd_dict_lint(path_dic_files):
         buf.seek(0) # go back to the beginning
         sys.stdout.writelines(iter(buf)) # write linewise
     # === END IF ===
+# === END ===
+
+
+# ------
+# 2. C-rules
+# ------
+@cmd_main.group(
+    name = "crule"
+)
+def cmd_crule(): pass
+
+
+@cmd_crule.command(
+    name = "uml"
+)
+@click.argument(
+    "input_file",
+    type = click.File(),
+    metavar = "<input_file>"
+)
+def cmd_crule_uml(input_file):
+    cr = crule.parse(input_file.read())
+    cr.dump_plantuml(sys.stdout)
+# === END ===
+
+@cmd_crule.command(
+    name = "uml-digest"
+)
+@click.argument(
+    "input_file",
+    type = click.File(),
+    metavar = "<input_file>"
+)
+def cmd_crule_uml_digest(input_file):
+    cr = crule.parse(input_file.read())
+    cr.dump_plautuml_digest(sys.stdout)
 # === END ===

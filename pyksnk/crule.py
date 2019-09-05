@@ -10,7 +10,8 @@ import random
 import lark
 
 _plantuml_rename_table = str.maketrans({
-    "-": "_"
+    "-": "_",
+    ":": "_",
 })
 
 @attr.s(cmp = False)
@@ -28,42 +29,57 @@ class CRULE_Clause:
     )
 
     def dump_plantuml_part(self, stream: typing.TextIO, first: bool = False) -> typing.NoReturn:
-        res = [
-            "    ",
-            ("if " if first else "elseif "),
-            (
-"""\
-({}) then (yes)
+        stream.write(
+            """\
+    {cond_kw} ({cond}) then (yes)
 """.format(
-    "∧".join(self.conditions)
+    cond_kw = "if" if first else "elseif",
+    cond = "\n".join(self.conditions)
 )
-            )
-
-        ]
+        )
 
         if self.rulepackages:
-            res.append("""\
-        fork
-""")
-            res.append("""\
+            stream.write(
+                """\
+            fork
+"""
+            )
+
+            stream.write(
+                """\
         fork again
 """.join(
     map(
         lambda r: """\
-             :{};
+             :{}|
              detach
 """.format(r),
         self.rulepackages
     )
 )
             )
-            res.append(
-"""\
+
+            stream.write(
+            """\
         end fork
 """
+        )
+        else:
+            stream.write(
+                """\
+            if (isempty(list_token)) then (yes)
+                :yield>
+            endif
+"""
             )
+            pass
         # === END IF ===
-        stream.writelines(res)
+
+        stream.write(
+            """\
+        end
+"""
+        )
     # === END ===
         
 # === END CLASS ===
@@ -95,13 +111,12 @@ class CRULE:
     # === END ===
 
     def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
-        stream.writelines(
-            [
-                "partition ",
-                self.get_name_plantuml(),
-                " {\n",
-            ]
-        ) 
+        stream.write("""partition {name} {{
+    start
+""".format(
+        name = self.get_name_plantuml(),
+    )
+        )
 
         if self.clauses:
             self.clauses[0].dump_plantuml_part(stream, True)
@@ -111,25 +126,62 @@ class CRULE:
             # === END FOR clause ===
 
             stream.write("""\
+    else
+        end
     endif
 """)
         else:
             pass
         # === END IF ===
 
-        if self.ctype == "END":
-            stream.write(
-                """    :yield>
-"""
-        )
-        else:
-            pass
+#        if self.ctype == "END":
+#            stream.write(
+#                """    :yield>
+#"""
+#        )
+#        else:
+#            pass
         # === END IF ===
         
-        stream.write("""}
-end
+        stream.write("""end
+}
 """)
     # === END ===
+
+    def dump_plantuml_digest(self, stream: typing.TextIO) -> typing.NoReturn:
+        possible_destinations = set(
+            itertools.chain.from_iterable(
+                map(
+                    lambda c: c.rulepackages,
+                    self.clauses
+                )
+            )
+        )
+
+        stream.writelines(
+            itertools.chain.from_iterable(
+                map(
+                    lambda dest: [
+                        #"    ",
+                        self.get_name_plantuml(),
+                        " --> ",
+                        dest.translate(_plantuml_rename_table),
+                        "\n"
+                    ],
+                    possible_destinations
+                )
+            )
+        )
+
+        if not all(map(lambda c: bool(c.rulepackages), self.clauses)):
+            stream.writelines(
+                [
+                    self.get_name_plantuml(),
+                    " --> [*] \n",
+                ]
+            )
+        # === END IF ===
+    # === END ===    
 # === END CLASS ===
 
 Preamble = str
@@ -154,32 +206,56 @@ class CRULE_Set:
     )
 
     def dump_plantuml(self, stream: typing.TextIO) -> typing.NoReturn:
-        stream.write(
-            r"""@startuml
-title {title}
-start
-fork
-{start_rules}
-end fork
-end
-""".format(
-                title = self.name.translate(_plantuml_rename_table),
-                start_rules = "\nfork again\n".join(
-                    map(
-                        lambda r: r"""    :{};
-    detach""".format(
-                            r.get_name_plantuml()
-                        ),
-                        filter(
-                            lambda r: r.ctype == "START",
-                            self.rules.values()
-                        )
-                    )
-                )
+        rules_start = list(
+            filter(
+                lambda r: r.ctype == "START", self.rules.values()
+            )
+        )
+        rules_non_start = list(
+            filter(
+                lambda r: r.ctype != "START", self.rules.values()
             )
         )
 
-        for rule in self.rules.values():
+        stream.write(
+            """\
+@startuml
+skinparam shadowing false
+skinparam backgroundColor transparent
+
+title {title}
+
+start
+""".format(
+    title = self.name.translate(_plantuml_rename_table)
+)
+        )
+
+        len_rules_start = len(rules_start)
+        
+        if len_rules_start > 1:
+            stream.write("fork\n")
+            rules_start[0].dump_plantuml(stream)
+
+            for rule in rules_start[1:]:
+                stream.write("fork again\n")
+                rule.dump_plantuml(stream)
+            # === END FOR rule ===
+
+            stream.write("end fork\n")
+        elif len_rules_start == 1:
+            rules_start[0].dump_plantuml(stream)
+        else:
+            pass
+        # === END IF ===
+
+        stream.write(
+r"""
+stop
+"""
+        )
+
+        for rule in rules_non_start:
             rule.dump_plantuml(stream)
         # === END FOR rule ===
 
@@ -187,6 +263,45 @@ end
             r"""@enduml
 """
         )
+    # === END ===
+
+    def dump_plautuml_digest(self, stream: typing.TextIO) -> typing.NoReturn:
+        stream.write(
+            """\
+@startuml
+skinparam shadowing false
+skinparam backgroundColor transparent
+skinparam arrow {{
+    Padding 30
+}}
+skinparam linetype ortho
+hide empty description
+
+title {title}
+""".format(
+    title = self.name.translate(_plantuml_rename_table)
+)
+        )
+
+        for rule in self.rules.values():
+            rule.dump_plantuml_digest(stream)
+
+            if rule.ctype == "START":
+                stream.write(
+                """\
+[*] --> {rule_name}
+""".format(
+    rule_name = rule.get_name_plantuml()
+)
+                )
+            # === END IF ===
+        # === END FOR rule ===
+
+        stream.write(
+            r"""@enduml
+"""
+        )
+    # === END ===
 
 # === END CLASS ===
 
@@ -396,9 +511,3 @@ A Lark parser for MOR c-rules.
 def parse(text: str) -> CRULE_Set:
     return parser.parse(text)
 # === END ===
-
-if __name__ == "__main__":
-    import sys
-    cr = parse(sys.stdin.read())
-
-    cr.dump_plantuml(sys.stdout)
